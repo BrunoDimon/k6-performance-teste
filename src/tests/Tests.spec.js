@@ -1,0 +1,50 @@
+import { htmlReport } from 'https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js';
+import http from 'k6/http';
+import { check, sleep } from 'k6';
+import { Trend } from 'k6/metrics';
+
+export const getContactsDuration = new Trend('get_contacts', true);
+
+export const options = {
+  thresholds: {
+    http_req_failed: ['rate<0.01'],
+    http_req_duration: ['avg<100']
+  },
+  stages: [
+    { duration: '10s', target: 10 },
+    { duration: '20s', target: 20 },
+    { duration: '30s', target: 50 },
+    { duration: '60s', target: 100 },
+    { duration: '30s', target: 50 },
+    { duration: '20s', target: 20 },
+    { duration: '10s', target: 10 }
+  ]
+};
+
+export function handleSummary(data) {
+  return {
+    './src/output/index.html': htmlReport(data),
+    stdout: textSummary(data, { indent: ' ', enableColors: true })
+  };
+}
+
+export default function () {
+  const baseUrl =
+    'https://www.3dtelecom.com.br/wp-includes/js/dist/i18n.min.js?ver=5e580eb46a90c2b997e6';
+
+  const params = {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  };
+
+  const OK = 200;
+
+  const res = http.post(`${baseUrl}`, params);
+
+  getContactsDuration.add(res.timings.duration);
+
+  check(res, {
+    'get contacts - status 200': () => res.status === OK
+  });
+}
