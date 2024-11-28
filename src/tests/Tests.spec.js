@@ -1,24 +1,27 @@
 import { htmlReport } from 'https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js';
 import { textSummary } from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
-import http from 'k6/http';
+import http, { request } from 'k6/http';
 import { check, sleep } from 'k6';
-import { Trend } from 'k6/metrics';
+import { Rate, Trend } from 'k6/metrics';
 
-export const getContactsDuration = new Trend('get_contacts', true);
+export const get3DAPIDuration = new Trend('get_contacts', true);
+export const requestsSuccessRate = new Rate('SUCCESS_RATE');
 
 export const options = {
   thresholds: {
-    http_req_failed: ['rate<0.01'],
-    http_req_duration: ['avg<100']
+    http_req_failed: ['rate<0.12'],
+    http_req_duration: ['p(95)<5700']
   },
   stages: [
-    { duration: '10s', target: 10 },
-    { duration: '20s', target: 20 },
-    { duration: '30s', target: 50 },
-    { duration: '60s', target: 100 },
-    { duration: '30s', target: 50 },
-    { duration: '20s', target: 20 },
-    { duration: '10s', target: 10 }
+    { duration: '25s', target: 10 },
+    { duration: '20s', target: 50 },
+    { duration: '55s', target: 50 },
+    { duration: '20s', target: 100 },
+    { duration: '55s', target: 100 },
+    { duration: '20s', target: 180 },
+    { duration: '80s', target: 180 },
+    { duration: '10s', target: 300 },
+    { duration: '15s', target: 300 }
   ]
 };
 
@@ -43,9 +46,10 @@ export default function () {
 
   const res = http.post(`${baseUrl}`, params);
 
-  getContactsDuration.add(res.timings.duration);
+  get3DAPIDuration.add(res.timings.duration);
+  requestsSuccessRate.add(res.status === OK);
 
   check(res, {
-    'get contacts - status 200': () => res.status === OK
+    '3D API - status 200': () => res.status === OK
   });
 }
