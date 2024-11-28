@@ -4,7 +4,7 @@ import http, { request } from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate, Trend } from 'k6/metrics';
 
-export const get3DAPIDuration = new Trend('get_contacts', true);
+export const get3DAPIDuration = new Trend('GET_3D_API', true);
 export const requestsSuccessRate = new Rate('SUCCESS_RATE');
 
 export const options = {
@@ -50,6 +50,6 @@ export default function () {
   requestsSuccessRate.add(res.status === OK);
 
   check(res, {
-    '3D API - status 200': () => res.status === OK
+    'GET_3D API - status 200': () => res.status === OK
   });
 }
